@@ -1,0 +1,6 @@
+# Visual studio specific files.
+/.vs/
+
+# Build specific files.
+/Build/
+/out/
