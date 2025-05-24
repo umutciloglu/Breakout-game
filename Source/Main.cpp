@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <glad/glad.h>
 #include <GL/freeglut.h>
 #include <vector>
@@ -16,6 +17,25 @@ const int BRICK_ROWS = 8;
 const int BRICK_COLS = 10;
 const float PADDLE_SPEED = 300.0f;
 const float BALL_SPEED = 200.0f;
+
+std::ofstream log_file;
+
+void checkOpenGLError(const char* operation) {
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        log_file << "[OpenGL ERROR] " << operation << ": ";
+        const char* errorStr = "";
+        switch(error) {
+            case GL_INVALID_ENUM: errorStr = "GL_INVALID_ENUM"; break;
+            case GL_INVALID_VALUE: errorStr = "GL_INVALID_VALUE"; break;
+            case GL_INVALID_OPERATION: errorStr = "GL_INVALID_OPERATION"; break;
+            case GL_OUT_OF_MEMORY: errorStr = "GL_OUT_OF_MEMORY"; break;
+            default: errorStr = "Unknown error"; break;
+        }
+        log_file << errorStr << " (" << error << ")" << std::endl;
+    }
+}
+
 
 // Game state
 struct Vector2 {
@@ -306,6 +326,7 @@ void framebuffer_size_callback(int width, int height) {
 }
 
 int main(int argc, char** argv) {
+	log_file = std::ofstream("log.txt");
 	glutInit(&argc, argv);
 	
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
@@ -313,9 +334,15 @@ int main(int argc, char** argv) {
 	glutCreateWindow("Breakout Game - FreeGLUT");
 	
 	if (!gladLoadGLLoader((GLADloadproc)glutGetProcAddress)) {
-		std::cerr << "[GLAD]: Failed to load OpenGL methods from driver." << std::endl;
+		log_file << "[GLAD]: Failed to load OpenGL methods from driver." << std::endl;
+		log_file.close();
 		return -1;
 	}
+	
+	log_file << "OpenGL Successfully Initialized" << std::endl;
+	log_file << "OpenGL Vendor: " << glGetString(GL_VENDOR) << std::endl;
+	log_file << "OpenGL Renderer: " << glGetString(GL_RENDERER) << std::endl;
+	log_file << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 	
 	// Initialize game
 	initBricks();
@@ -327,7 +354,10 @@ int main(int argc, char** argv) {
 	glutReshapeFunc(framebuffer_size_callback);
 	glutDisplayFunc(display);
 	
+	checkOpenGLError("Before main loop");
 	glutMainLoop();
 	
+	
+	log_file.close();
 	return 0;
 }
