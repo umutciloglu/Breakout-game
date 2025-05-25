@@ -72,6 +72,7 @@ Ball ball(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, -BALL_SPEED * 0.7f, -BALL_SPEED *
 Paddle paddle(WINDOW_WIDTH / 2 - PADDLE_WIDTH / 2, 50);
 
 // Game state
+int currentLevel = 1; // Added to track current level
 bool gameRunning = true;
 bool gameWon = false;
 bool gameLost = false;
@@ -128,14 +129,34 @@ void initBricks() {
 	bricks.clear();
 	float startX = (WINDOW_WIDTH - (BRICK_COLS * BRICK_WIDTH)) / 2;
 	float startY = WINDOW_HEIGHT - 100;
-	
-	for (int row = 0; row < BRICK_ROWS; row++) {
-		for (int col = 0; col < BRICK_COLS; col++) {
-			float x = startX + col * BRICK_WIDTH;
-			float y = startY - row * BRICK_HEIGHT;
-			bricks.push_back(Brick(x, y, row)); // Different color per row
+
+	if (currentLevel == 1) {
+		for (int row = 0; row < BRICK_ROWS; row++) {
+			for (int col = 0; col < BRICK_COLS; col++) {
+				float x = startX + col * BRICK_WIDTH;
+				float y = startY - row * BRICK_HEIGHT;
+				bricks.push_back(Brick(x, y, row)); // Different color per row
+			}
+		}
+	} else if (currentLevel == 2) {
+		// Example of a different layout for level 2
+		for (int row = 0; row < BRICK_ROWS; row++) {
+			for (int col = 0; col < BRICK_COLS; col++) {
+				if ((col + row) % 2 == 0) { // Checkerboard pattern
+					float x = startX + col * BRICK_WIDTH;
+					float y = startY - row * BRICK_HEIGHT;
+					bricks.push_back(Brick(x, y, (row + col) % BRICK_ROWS));
+				}
+			}
+		}
+		// Ensure there are some bricks in level 2 if the pattern is too sparse
+		if (bricks.empty()) {
+			for (int i = 0; i < 5; ++i) {
+                 bricks.push_back(Brick(startX + i * (BRICK_WIDTH + 5), startY - BRICK_HEIGHT * 2, i % BRICK_ROWS));
+            }
 		}
 	}
+	// Add more levels here with else if (currentLevel == N) { ... }
 }
 
 void resetBall() {
@@ -149,6 +170,7 @@ void resetGame() {
 	paddle.position = Vector2(WINDOW_WIDTH / 2 - PADDLE_WIDTH / 2, 50);
 	score = 0;
 	lives = 3;
+	currentLevel = 1; // Reset to level 1
 	gameRunning = true;
 	gameWon = false;
 	gameLost = false;
@@ -190,7 +212,7 @@ void updateGame(float deltaTime) {
 		// Calculate bounce angle based on where ball hits paddle
 		float paddleCenter = paddle.position.x + PADDLE_WIDTH / 2;
 		float ballCenter = ball.position.x + BALL_SIZE / 2;
-		float hitPos = (ballCenter - paddleCenter) / (PADDLE_WIDTH / 2); // -1 to 1
+		float hitPos = (ballCenter - paddleCenter) / (PADDLE_WIDTH / 2);	// -1 to 1
 		
 		ball.velocity.x = hitPos * BALL_SPEED;
 		ball.velocity.y = abs(ball.velocity.y); // Always bounce up
@@ -233,8 +255,17 @@ void updateGame(float deltaTime) {
 		}
 	}
 	if (allBricksDestroyed) {
-		gameWon = true;
-		gameRunning = false;
+		currentLevel++;
+		if (currentLevel > 2) { // Assuming 2 levels for now
+			gameWon = true;
+			gameRunning = false;
+		} else {
+			// Move to next level
+			initBricks();
+			resetBall();
+			// Keep paddle position, score, and lives
+			gameRunning = true; // Or false to show a "Level X" message
+		}
 	}
 }
 
@@ -282,6 +313,10 @@ void display() {
 		char livesText[50];
 		sprintf(livesText, "Lives: %d", lives);
 		drawText(10, WINDOW_HEIGHT - 55, livesText);
+		
+		char levelText[50]; // For displaying current level
+		sprintf(levelText, "Level: %d", currentLevel);
+		drawText(WINDOW_WIDTH - 100, WINDOW_HEIGHT - 30, levelText);
 		
 		if (gameWon) {
 			drawText(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, "YOU WIN! Press R to restart");
